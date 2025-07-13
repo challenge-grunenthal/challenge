@@ -2,7 +2,7 @@ import os
 from typing import List, Optional, Tuple
 
 from dotenv import load_dotenv
-from langchain_chroma import Chroma
+from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -13,7 +13,7 @@ load_dotenv()
 
 class PDFTool:
     def __init__(self):
-        self.vector_store: Optional[Chroma] = None
+        self.vector_store: Optional[FAISS] = None
         self.embeddings: Optional[OpenAIEmbeddings] = None
         self.llm: Optional[ChatOpenAI] = None
         self._initialize_components()
@@ -33,12 +33,6 @@ class PDFTool:
     def create_vector_store(self, pdf_path: str = "./pdf_data/report_2023_2024.pdf"):
         """Create and populate the vector store with PDF content."""
 
-        # Initialize vector store
-        self.vector_store = Chroma(
-            collection_name="grunenthal_report",
-            embedding_function=self.embeddings,
-        )
-
         # Load and process PDF
         try:
             loader = PyPDFLoader(pdf_path)
@@ -50,8 +44,12 @@ class PDFTool:
             )
             all_splits = text_splitter.split_documents(docs)
 
-            # Add documents to vector store
-            self.vector_store.add_documents(documents=all_splits)
+            # Create FAISS vector store
+            self.vector_store = FAISS.from_documents(
+                documents=all_splits,
+                embedding=self.embeddings
+            )
+            
             print(f"Successfully processed {len(all_splits)} document chunks")
 
         except FileNotFoundError:
