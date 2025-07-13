@@ -367,9 +367,6 @@ datasets/
 *.model
 models/
 
-# PDF files (if you don't want to track them)
-*.pdf
-
 # Backup files
 *.bak
 *.backup
