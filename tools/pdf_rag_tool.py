@@ -2,7 +2,7 @@ import os
 from typing import List, Optional, Tuple
 
 from dotenv import load_dotenv
-from langchain_community.vectorstores import FAISS
+from langchain_community.vectorstores import InMemoryVectorStore
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -13,7 +13,7 @@ load_dotenv()
 
 class PDFTool:
     def __init__(self):
-        self.vector_store: Optional[FAISS] = None
+        self.vector_store: Optional[InMemoryVectorStore] = None
         self.embeddings: Optional[OpenAIEmbeddings] = None
         self.llm: Optional[ChatOpenAI] = None
         self._initialize_components()
@@ -44,8 +44,8 @@ class PDFTool:
             )
             all_splits = text_splitter.split_documents(docs)
 
-            # Create FAISS vector store
-            self.vector_store = FAISS.from_documents(
+            # Create in-memory vector store
+            self.vector_store = InMemoryVectorStore.from_documents(
                 documents=all_splits,
                 embedding=self.embeddings
             )
