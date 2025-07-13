@@ -93,7 +93,12 @@ def pdf_search_tool(question: str) -> str:
     global pdf_tool
     try:
         if pdf_tool is None:
-            return "Error: PDF tool not initialized"
+            return "Error: PDF tool not initialized. Please check the initialization logs."
+        
+        # Check if vector store is initialized
+        if not hasattr(pdf_tool, 'vector_store') or pdf_tool.vector_store is None:
+            return "Error: PDF vector store not initialized. The PDF file may not have been loaded successfully during initialization."
+        
         docs, answer = pdf_tool.search_text(question)
 
         # Convert Document objects to serializable format
@@ -157,17 +162,52 @@ def initialize_agent_with_config(
 
     # Initialize PDF tool vector store
     try:
-        # Use absolute path to the PDF file
-        pdf_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "tools",
-            "pdf_data",
-            "report_2023_2024.pdf",
-        )
+        # Try multiple possible paths for the PDF file
+        possible_paths = [
+            # Current working directory relative path
+            "./tools/pdf_data/report_2023_2024.pdf",
+            # Absolute path from current file
+            os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "tools",
+                "pdf_data",
+                "report_2023_2024.pdf",
+            ),
+            # Path relative to the agent directory
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "..",
+                "tools",
+                "pdf_data",
+                "report_2023_2024.pdf",
+            ),
+        ]
+        
+        print(f"🔍 Current working directory: {os.getcwd()}")
+        print(f"🔍 Agent file location: {os.path.abspath(__file__)}")
+        print(f"🔍 Trying PDF paths: {possible_paths}")
+        
+        pdf_path = None
+        for path in possible_paths:
+            exists = os.path.exists(path)
+            print(f"🔍 Path {path}: {'✅ EXISTS' if exists else '❌ NOT FOUND'}")
+            if exists:
+                pdf_path = path
+                break
+        
+        if pdf_path is None:
+            print(f"⚠️ PDF file not found. Tried paths: {possible_paths}")
+            print(f"⚠️ Current directory contents: {os.listdir('.')}")
+            raise FileNotFoundError("PDF file not found in any expected location")
+        
+        print(f"📄 Using PDF path: {pdf_path}")
         pdf_tool.create_vector_store(pdf_path)
         print("✅ PDF vector store initialized")
     except Exception as e:
         print(f"⚠️ PDF vector store initialization failed: {e}")
+        print(f"⚠️ Exception type: {type(e).__name__}")
+        import traceback
+        print(f"⚠️ Full traceback: {traceback.format_exc()}")
 
     # Initialize Neo4j connection
     try:
